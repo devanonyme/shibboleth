@@ -412,6 +412,15 @@ function shibboleth_get_managed_user_fields() {
 	return $managed;
 }
 
+function is_managed($fieldname, $shib_headers) {
+	$managed = false;
+	
+	if (isset($shib_headers[$fieldname]['managed'])) {
+		$managed = $shib_headers[$fieldname]['managed'];
+	}
+
+	return $managed;
+}
 
 /**
  * Update the user data for the specified user based on the current Shibboleth headers.  Unless 
