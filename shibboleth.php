@@ -39,6 +39,22 @@ function shibboleth_auto_login() {
 add_action('init', 'shibboleth_auto_login');
 
 /**
+ * Perform automatic logout. This is based on the user being logged in,
+ * an inactive session and the account having been created by Shibboleth plugin
+ * and the option auto_login being set to true (todo : dedicated option).
+ */
+function shibboleth_auto_logout() {
+    $shibboleth_auto_login = shibboleth_get_option('shibboleth_auto_login');
+    if (is_user_logged_in() && !shibboleth_session_active() && $shibboleth_auto_login) {
+        $user = wp_get_current_user();
+        if (get_user_meta($user->ID, 'shibboleth_account')) {
+                wp_logout();
+        }
+    }
+}
+add_action('init', 'shibboleth_auto_logout');
+
+/**
  * Activate the plugin.  This registers default values for all of the 
  * Shibboleth options and attempts to add the appropriate mod_rewrite rules to 
  * WordPress's .htaccess file.
