@@ -457,8 +457,10 @@ function shibboleth_update_user_data($user_id, $force_update = false) {
 			$managed = $shib_headers[$header]['managed'];
 		}
 		if ( $force_update || $managed ) {
-			$filter = 'shibboleth_' . ( strpos($field, 'user_') === 0 ? '' : 'user_' ) . $field;
-			$user_data[$field] = apply_filters($filter, $_SERVER[$shib_headers[$header]['name']]);
+			if (isset($_SERVER[$shib_headers[$header]['name']])) {
+				$filter = 'shibboleth_' . ( strpos($field, 'user_') === 0 ? '' : 'user_' ) . $field;
+				$user_data[$field] = apply_filters($filter, $_SERVER[$shib_headers[$header]['name']]);
+			}
 		}
 	}
 
