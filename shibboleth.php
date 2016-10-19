@@ -473,9 +473,36 @@ function shibboleth_update_user_data($user_id, $force_update = false) {
 			$managed = $shib_headers[$header]['managed'];
 		}
 		if ( $force_update || $managed ) {
-			$filter = 'shibboleth_' . ( strpos($field, 'user_') === 0 ? '' : 'user_' ) . $field;
-			$user_data[$field] = apply_filters($filter, $_SERVER[$shib_headers[$header]['name']]);
+			if (isset($_SERVER[$shib_headers[$header]['name']])) {
+				$filter = 'shibboleth_' . ( strpos($field, 'user_') === 0 ? '' : 'user_' ) . $field;
+				$user_data[$field] = apply_filters($filter, $_SERVER[$shib_headers[$header]['name']]);
+			}
 		}
+	}
+
+	// Besoin particulier : Nous ne voulons pas inutilement ramener les email des usagers
+	// dans wordpress tout en respectant la contrainte du email obligatoire. On veut avoir
+	// un hook nous permettant de définir / construire un email bidon pour les besoins
+	// de l'inscription (mais pourrait aussi être un email valide pour le site).
+	//
+	// Le apply_filter ne passe pas d'information supplémentaire sur le contexte.
+	// C'est un problème général et commun de Wordpress.
+	// Il n'est donc pas possible de construire le email selon les autres informations disponibles,
+	// l'identifiant en l'occurence. ex. shibboleth_id@my_wordpress_site.
+	// On veut pouvoir modifier le email avant le premier update_user
+	// autrement une notification courriel est envoyée.
+	// Lors de l'inscription initiale, Shibboleth appelle deux fois l'update
+	// Une fois avec tous les champs (force) et une fois avec les champs mappés seulement.
+	// Cela pose problème avec ce code qui requiert toutes les informations
+	// disponible la première fois mais pas la deuxième.
+	// Force update est équivalent a initial account.
+	// Si on crée le compte la première fois et que le email n'est pas managed
+	// On appele le hook avec le user data permettant de récupérer l'identifiant.
+	// (le user id ne peut pas être utilisé, les données n'étant pas définies.
+	//
+	$email_managed = isset($shib_headers['email']['managed']) ? $shib_headers['email']['managed'] : false;
+	if ($force_update &&  !$email_managed) {
+		$user_data['user_email'] = apply_filters('shibboleth_override_email', $user_data);
 	}
 
 	wp_update_user($user_data);
